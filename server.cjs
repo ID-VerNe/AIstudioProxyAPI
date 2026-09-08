@@ -48,7 +48,7 @@ if (missingModules.length > 0) {
 }
 
 // --- 配置 ---
-const SERVER_PORT = process.env.PORT || 49183;
+const SERVER_PORT = process.env.PORT || 3000;
 const CHROME_DEBUGGING_PORT = 8848;
 const CDP_ADDRESS = `http://127.0.0.1:${CHROME_DEBUGGING_PORT}`;
 const AI_STUDIO_URL_PATTERN = 'aistudio.google.com/';

@@ -1,7 +1,7 @@
 // test_multi.cjs - 连续多轮请求自动化测试脚本
 const OpenAI = require('openai');
 
-const PROXY_URL = process.env.PROXY_URL || 'http://localhost:49183/v1';
+const PROXY_URL = process.env.PROXY_URL || 'http://localhost:3000/v1';
 const MODEL_NAME = process.env.MODEL || 'gemini-2.5-flash';
 
 const client = new OpenAI({
