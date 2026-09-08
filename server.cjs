@@ -5,6 +5,23 @@ const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 
+// --- Load Environment Variables (.env) ---
+if (typeof process.loadEnvFile === 'function') {
+    try { process.loadEnvFile(); } catch (_) {}
+} else {
+    try {
+        const envPath = path.join(__dirname, '.env');
+        if (fs.existsSync(envPath)) {
+            fs.readFileSync(envPath, 'utf8').split(/\r?\n/).forEach(line => {
+                const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+                if (match && !process.env[match[1]]) {
+                    process.env[match[1]] = (match[2] || '').trim().replace(/^['"]|['"]$/g, '');
+                }
+            });
+        }
+    } catch (_) {}
+}
+
 // --- Bypass Proxy for Local Connections ---
 const noProxyEntries = ['127.0.0.1', 'localhost', '::1'];
 const currentNoProxy = process.env.NO_PROXY || process.env.no_proxy || '';
