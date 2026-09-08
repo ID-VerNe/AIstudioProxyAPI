@@ -407,11 +407,16 @@ function validateChatRequest(messages) {
     };
 }
 
-// 辅助延时函数
+// 辅助延时函数与人类模拟随机延时 (默认 3-10 秒)
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const randomDelay = (minMs, maxMs) => sleep(Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs);
+const HUMAN_DELAY_MIN = parseFloat(process.env.HUMAN_DELAY_MIN) || 3;
+const HUMAN_DELAY_MAX = parseFloat(process.env.HUMAN_DELAY_MAX) || 10;
+const getHumanDelayMs = (minSec = HUMAN_DELAY_MIN, maxSec = HUMAN_DELAY_MAX) => {
+    return Math.floor(Math.random() * ((maxSec - minSec) * 1000) + (minSec * 1000));
+};
 
-// 与页面交互并提交 Prompt (模拟真实人类鼠标点击与键盘输入，加入 1-10s 动作延时)
+// 与页面交互并提交 Prompt (模拟真实人类鼠标点击与键盘输入，加入 3-10s 动作延时)
 async function interactAndSubmitPrompt(page, prompt, reqId) {
     console.log(`[${reqId}] 开始页面交互 (启用人类行为模拟与动作延时)...`);
     const inputField = page.locator(INPUT_SELECTOR).first();
@@ -429,9 +434,9 @@ async function interactAndSubmitPrompt(page, prompt, reqId) {
         }
     } catch (_) {}
 
-    // 2. 人类模拟：操作前思考停顿 (1.5s - 3.5s)
-    const preDelay = Math.floor(Math.random() * 2000 + 1500);
-    console.log(`[${reqId}]  - 人类模拟：动作前停顿 (${(preDelay / 1000).toFixed(1)}s)...`);
+    // 2. 人类模拟：操作前思考停顿 (3-10s)
+    const preDelay = getHumanDelayMs();
+    console.log(`[${reqId}]  - 人类模拟：输入前思考停顿 (${(preDelay / 1000).toFixed(1)}s)...`);
     await sleep(preDelay);
 
     console.log(`[${reqId}]  - 等待输入框可用...`);
@@ -488,8 +493,8 @@ async function interactAndSubmitPrompt(page, prompt, reqId) {
         await page.keyboard.insertText(rest);
     }
 
-    // 6. 人类模拟：输入完成后的检查犹豫停顿 (1.2s - 2.8s)
-    const checkDelay = Math.floor(Math.random() * 1600 + 1200);
+    // 6. 人类模拟：输入完成后的检查犹豫停顿 (3-10s)
+    const checkDelay = getHumanDelayMs();
     console.log(`[${reqId}]  - 人类模拟：打字完成，核对停顿 (${(checkDelay / 1000).toFixed(1)}s)...`);
     await sleep(checkDelay);
 
@@ -1084,11 +1089,44 @@ async function processQueue() {
               try {
                   const clearButton = page.locator(CLEAR_CHAT_BUTTON_SELECTOR).first();
                   if (await clearButton.isVisible({ timeout: 2000 })) {
-                      await clearButton.click({ timeout: 2000 }).catch(() => {});
+                      // 人类模拟：重置操作前思考停顿 (3-10s)
+                      const clearDelay = getHumanDelayMs();
+                      console.log(`[${reqId}]   - 人类模拟：重置会话前停顿 (${(clearDelay / 1000).toFixed(1)}s)...`);
+                      await sleep(clearDelay);
+
+                      const clearBbox = await clearButton.boundingBox();
+                      if (clearBbox) {
+                          const cx = clearBbox.x + clearBbox.width * (0.3 + Math.random() * 0.4);
+                          const cy = clearBbox.y + clearBbox.height * (0.3 + Math.random() * 0.4);
+                          await page.mouse.move(cx, cy, { steps: 8 + Math.floor(Math.random() * 8) });
+                          await randomDelay(100, 250);
+                          await page.mouse.down();
+                          await randomDelay(50, 100);
+                          await page.mouse.up();
+                      } else {
+                          await clearButton.click({ timeout: 2000 }).catch(() => {});
+                      }
                       console.log(`[${reqId}]   - "New/Clear chat" 按钮已触发。`);
+
                       const confirmButton = page.locator(CLEAR_CHAT_CONFIRM_BUTTON_SELECTOR).first();
                       if (await confirmButton.isVisible({ timeout: 1500 })) {
-                          await confirmButton.click({ timeout: 2000 }).catch(() => {});
+                          // 人类模拟：确认对话框弹窗核对停顿 (3-10s)
+                          const confirmDelay = getHumanDelayMs();
+                          console.log(`[${reqId}]   - 人类模拟：确认清空前停顿 (${(confirmDelay / 1000).toFixed(1)}s)...`);
+                          await sleep(confirmDelay);
+
+                          const confBbox = await confirmButton.boundingBox();
+                          if (confBbox) {
+                              const fx = confBbox.x + confBbox.width * (0.3 + Math.random() * 0.4);
+                              const fy = confBbox.y + confBbox.height * (0.3 + Math.random() * 0.4);
+                              await page.mouse.move(fx, fy, { steps: 8 + Math.floor(Math.random() * 8) });
+                              await randomDelay(100, 250);
+                              await page.mouse.down();
+                              await randomDelay(50, 100);
+                              await page.mouse.up();
+                          } else {
+                              await confirmButton.click({ timeout: 2000 }).catch(() => {});
+                          }
                           console.log(`[${reqId}]   - 确认清空对话框已确认。`);
                       }
                       // 等待页面中旧回合 DOM 被清空
